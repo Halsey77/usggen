@@ -38,6 +38,7 @@ def plot_loss(train_loss, name):
 def instantiate_model_classes(params, config, use_glove=False):
     print('Initialize the model..')
     ordering, weighted_loss, node_pred, edge_pred, use_argmax, use_MHP = get_config(config)
+    
     # Embeddings for input
     node_emb = nn.Embedding(params.num_node_categories,
                             params.node_emb_size, 
@@ -46,12 +47,14 @@ def instantiate_model_classes(params, config, use_glove=False):
     if use_glove:
         glove_emb = torch.Tensor(pickle.load(open(os.path.join('./data','glove_emb.p'), 'rb')))
         node_emb.load_state_dict({'weight': glove_emb})
+    
     node_emb.weight.requires_grad=False
     edge_emb = nn.Embedding(params.num_edge_categories,
                             params.edge_emb_size,
                             padding_idx=0,
                             scale_grad_by_freq=False).to(DEVICE) # 0, 1to50, 51, 52
     edge_emb.weight.requires_grad=False
+    
     # Node Generator
     if node_pred:
         mlp_node = MLP_node(h_graph_size=params.mlp_input_size,

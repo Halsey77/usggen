@@ -149,6 +149,7 @@ def generate_one_graph(params, config, models, first_node, edge_supervision=True
     num_graphs=1
     ordering, weighted_loss, node_pred, edge_pred, use_argmax, use_MHP = get_config(config)
     node_emb, edge_emb, mlp_node, gru_graph1, gru_graph2, gru_graph3, gru_edge1, gru_edge2 = models
+    
     # set models to eval mode
     node_emb.eval()
     edge_emb.eval()
@@ -158,6 +159,7 @@ def generate_one_graph(params, config, models, first_node, edge_supervision=True
     gru_graph2.eval()
     gru_edge1.eval()
     gru_edge2.eval()
+    
     # intantiate generated graphs
     X = torch.zeros(num_graphs,
                     params.max_num_node-1).to(DEVICE).long()

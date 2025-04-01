@@ -59,3 +59,10 @@ python main_eval.py --hyperparams_str <experiment_name>
 By default, this code first generates the data and then computes the MMD metrics. 
 In case the data for that model is already generated and you only wish to compute the metrics, please set `--gen_data 0`.
 
+# Anomaly Detection results
+
+With corrupt rate of 0.3, detecting 200 graphs, the model achieves the following results:
+Optimal NLL threshold: 270.58251953125
+True Positive Rate: 0.8113207547169812
+False Positive Rate: 0.07534246575342465
+AUROC: 0.8712845696562419

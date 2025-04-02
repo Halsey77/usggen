@@ -1,4 +1,5 @@
 import argparse
+import math
 import os
 import pickle
 import random
@@ -157,8 +158,10 @@ def cal_NLL(graph, params, config, models, edge_supervision=True) -> float:
     total_nll, node_nll, fto_nll, ffrom_nll = 0, 0, 0, 0
 
     softmax = torch.nn.Softmax(dim=0)
+
     # Go through each node in the graph and compute NLL.
-    for i in range(len(true_nodes) - 2):
+    for i in range(len(true_nodes) - 1):
+
         # update graph info with generated nodes/edges
         X[:, i] = Xsample + 1
         Fto_vec = Fto[:, :, i]
@@ -190,7 +193,7 @@ def cal_NLL(graph, params, config, models, edge_supervision=True) -> float:
         true_node = true_nodes[i + 1] - 1
         true_node_prob = Xscores[true_node]
         node_nll += -torch.log(true_node_prob)
-        Xsample = torch.tensor([true_nodes[i + 1] - 1])
+        Xsample = torch.tensor([true_node])
 
         # get initial hidden state of gru_edge
         if params.egru_num_layers > 1:
@@ -225,6 +228,7 @@ def cal_NLL(graph, params, config, models, edge_supervision=True) -> float:
 
         # Go through previous nodes to get edges score.
         for j in range(i + 1):
+
             # input for gru_in
             x1 = X[:, j]
             x2 = Xsample + 1
@@ -283,7 +287,8 @@ def cal_NLL(graph, params, config, models, edge_supervision=True) -> float:
 
     # Normalize NLL scores by the number of nodes in the graph.
     total_nll = node_nll + fto_nll + ffrom_nll
-    return total_nll
+    # HACK: the NLL is way too high, can reach infinity.
+    return 9999 if math.isinf(total_nll) else total_nll
 
 
 def load_sample_graph() -> list:
@@ -391,25 +396,27 @@ def plot_ROC_curve(nlls, labels) -> tuple[np.ndarray, np.ndarray, np.ndarray, fl
 def corrupt_edges(edges, num_nodes: int, ind_to_predicates: list) -> torch.Tensor:
     """
     Corrupt the edges in the graph by randomly changing their indices.
-    
+
     Input:
     - edges: a tensor of shape (num_nodes, num_nodes), where each element is the index of the predicate between two nodes.
     - num_nodes: int, the number of nodes in the graph.
     - ind_to_predicates: list, mapping from index to predicate names.
-    
+
     Ouput:
     - corrupted_edges: a tensor of shape (num_nodes, num_nodes), where each element is the index of the predicate between two nodes.
     """
     corrupted_edges = edges.clone()
     max_edge_value = len(ind_to_predicates) - 1
-    
+
     # Since edges_from and edges_to are upper triangular matrices, we only need to iterate through the upper triangular part of the matrix.
     # This is because the graph is undirected, so edges_from[i][j] and edges_to[j][i] are the same.
     for i in range(num_nodes):
         for j in range(i + 1, num_nodes):
             if random.random() < 0.5:
-                corrupted_edges[i, j] = torch.randint(0, max_edge_value, (1,)).long().to(DEVICE)
-                
+                corrupted_edges[i, j] = (
+                    torch.randint(0, max_edge_value, (1,)).long().to(DEVICE)
+                )
+
     return corrupted_edges
 
 
@@ -420,7 +427,7 @@ def corrupt_nodes(nodes, num_nodes: int, ind_to_classes: list) -> torch.Tensor:
     Input:
     - nodes: a tensor of shape (num_nodes), where each element is the index of a node in the scenegraph.
     - num_nodes: int, the number of nodes in the graph.
-    
+
     Output:
     - corrupted_nodes: a tensor of shape (num_nodes), where each element is the index of a node in the scenegraph.
     """
@@ -428,21 +435,25 @@ def corrupt_nodes(nodes, num_nodes: int, ind_to_classes: list) -> torch.Tensor:
     max_node_value = len(ind_to_classes) - 1
     for i in range(num_nodes):
         if random.random() < 0.5:  # Randomly change the node index with 50% probability
-            corrupted_nodes[i] = torch.randint(0, max_node_value, (1,)).long().to(DEVICE)
+            corrupted_nodes[i] = (
+                torch.randint(0, max_node_value, (1,)).long().to(DEVICE)
+            )
 
     return corrupted_nodes
 
 
-def corrupt_graph_data(graphs: list, corrupt_rate: float, ind_to_classes: list, ind_to_predicates: list) -> tuple[list, np.ndarray]:
+def corrupt_graph_data(
+    graphs: list, corrupt_rate: float, ind_to_classes: list, ind_to_predicates: list
+) -> tuple[list, np.ndarray]:
     """
     Corrupt the graph data by randomly changing the nodes and edges in the graph.
-    
+
     Input:
     - graphs: list of tuples (nodes, edges_from, edges_to).
     - corrupt_rate: float, the rate at which to corrupt the graph data.
     - ind_to_classes: list, mapping from index to class names.
     - ind_to_predicates: list, mapping from index to predicate names.
-    
+
     Output:
     - corrupted_graphs: list of tuples (nodes, edges_from, edges_to).
     - labels: np.ndarray, array of labels indicating whether the graph is corrupted (1) or not (0).
@@ -485,19 +496,23 @@ if __name__ == "__main__":
     # Load the model, params, and config
     print("Loading SceneGraphGen model")
     params, config, models = load_models("./models", args.hyperparam_str)
-    ind_to_classes, ind_to_predicates, _ = pickle.load(open(os.path.join('./data','categories.p'), 'rb'))
+    ind_to_classes, ind_to_predicates, _ = pickle.load(
+        open(os.path.join("./data", "categories.p"), "rb")
+    )
     result_file_name = "./nll.txt"
 
     # Load graph data
     graphs = load_graph_data(args.graph_data_file_path)
     # graphs = load_sample_graph()
-    
+
     # Corrupt graph data if needed
     print("Corrupting graph data...")
     if args.no_corrupt:
         labels = np.array([0] * len(graphs))
     else:
-        graphs, labels = corrupt_graph_data(graphs, args.corrupt_rate, ind_to_classes, ind_to_predicates)
+        graphs, labels = corrupt_graph_data(
+            graphs, args.corrupt_rate, ind_to_classes, ind_to_predicates
+        )
 
     # Calculate negative log likelihood for each graph
     print("Calculating NLL for each graph...")
@@ -507,29 +522,29 @@ if __name__ == "__main__":
         for graph in graphs:
             if count == max_call_count:
                 break
-            
+
             nll = cal_NLL(graph, params, config, models)
             # nll = normalize_nll(nll, graph)
             print(f"NLL {count}: {nll}")
             count += 1
 
-            f.writelines(f'{nll}\n')
+            f.writelines(f"{nll}\n")
 
     # HACK: test specific graph
     # graph = graphs[168]
     # nll = cal_NLL(graph, params, config, models)
     # print(f"NLL: {nll}")
-    
+
     print("Done calculating NLL.")
 
     # Detach tensors and convert to NumPy arrays if necessary
-    with open(result_file_name, 'r') as f:
+    with open(result_file_name, "r") as f:
         nll_arr = [float(line.strip()) for line in f.readlines()]
 
     # Plot NLL scores and ROC curve
     plot_nll_score(nll_arr)
-    fpr, tpr, thresholds, auroc = plot_ROC_curve(nll_arr, labels[:max_call_count - 1])
-    
+    fpr, tpr, thresholds, auroc = plot_ROC_curve(nll_arr, labels[: max_call_count - 1])
+
     # Find optimal threshold
     optimal_idx = np.argmax(tpr - fpr)
     optimal_threshold = thresholds[optimal_idx]
@@ -537,5 +552,5 @@ if __name__ == "__main__":
     print(f"True Positive Rate: {tpr[optimal_idx]}")
     print(f"False Positive Rate: {fpr[optimal_idx]}")
     print(f"AUROC: {auroc}")
-    
+
     plt.show()

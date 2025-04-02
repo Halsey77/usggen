@@ -61,8 +61,16 @@ In case the data for that model is already generated and you only wish to comput
 
 # Anomaly Detection results
 
-With corrupt rate of 0.3, detecting 200 graphs, the model achieves the following results:
-Optimal NLL threshold: 270.58251953125
-True Positive Rate: 0.8113207547169812
-False Positive Rate: 0.07534246575342465
-AUROC: 0.8712845696562419
+Below are the results of the anomaly detection task. The model is trained on the custom VG dataset and evaluated on the test set.
+
+The command we run this test is:
+```
+python anomaly_detect.py --corrupt_rate 0.3 --max_graph_count 2000
+```
+
+With corrupt rate of 0.3, detecting 2000 graphs, the model achieves the following results:
+Optimal threshold: 365.2301330566406
+True Positive Rate: 0.7912457912457912
+False Positive Rate: 0.026334519572953737
+AUROC: 0.9246653965515175
+![result image](anomaly_detect_result.png)

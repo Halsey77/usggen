@@ -69,6 +69,7 @@ python anomaly_detect.py --corrupt_rate 0.3 --max_graph_count 2000
 ```
 
 With corrupt rate of 0.3, detecting 2000 graphs, the model achieves the following results:
+
 Optimal threshold: 365.2301330566406
 
 True Positive Rate: 0.7912457912457912

@@ -4,3 +4,5 @@ models
 generated_samples
 .vscode
 __pycache__
+
+nll.txt

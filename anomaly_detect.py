@@ -13,11 +13,9 @@ from train_helper import get_config, load_models
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--no_corrupt", default=False, action="store_true")
-parser.add_argument("--corrupt_rate", default=0.2, type=float)
-parser.add_argument("--num_eval", default=1000, type=int)
-parser.add_argument("--gen_data", default=1, type=int)
+parser.add_argument("--corrupt_rate", default=0.3, type=float)
 parser.add_argument("--graph_data_file_path", default="./data/test_dataset.p", type=str)
-parser.add_argument("--max_graph_count", default=200, type=int)
+parser.add_argument("--max_graph_count", default=25000, type=int)
 parser.add_argument(
     "--hyperparam_str",
     default="usggen_ordering-random_classweights-none_nodepred-True_edgepred-True_argmaxFalse_MHPFalse_batch-256_samples-256_epochs-300_nlr-0.001_nlrdec-0.95_nstep-1710_elr-0.001_elrdec-0.95_estep-1710",

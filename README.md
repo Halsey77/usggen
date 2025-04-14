@@ -63,6 +63,9 @@ In case the data for that model is already generated and you only wish to comput
 
 Below are the results of the anomaly detection task. The model is trained on the custom VG dataset and evaluated on the test set.
 
+NLL histogram when no graphs are corrupted:
+![result image](./img/no_corrupt_hist.png)
+
 The command we run this test is:
 ```
 python anomaly_detect.py --corrupt_rate 0.3 --max_graph_count 2000
